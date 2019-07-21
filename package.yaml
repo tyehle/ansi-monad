@@ -21,6 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/tyeh
 
 dependencies:
 - base >= 4.7 && < 5
+- ansi-terminal >= 0.9
+- colour
+- mtl
+- containers
 
 library:
   source-dirs: src
