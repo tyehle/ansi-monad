@@ -1,7 +1,7 @@
 name:                ansi-monad
 version:             0.1.0.0
 github:              "tyehle/ansi-monad"
-license:             BSD3
+license:             MIT
 author:              "Tobin Yehle"
 maintainer:          "tobinyehle@gmail.com"
 copyright:           "2019 Tobin Yehle"
