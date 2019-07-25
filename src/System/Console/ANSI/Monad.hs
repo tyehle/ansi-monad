@@ -76,25 +76,29 @@ applySGR (SetRGBColor Foreground c) s = s{foreground=Just $ RGBColor c}
 applySGR (SetRGBColor Background c) s = s{background=Just $ RGBColor c}
 
 
-allCodes :: [ANSIColor] -> [SGR]
-allCodes colors = enumerableCodes ++ colorCodes
+codesForState :: SGRState -> [SGR]
+codesForState s = codes ++ colorCodes
   where
+    codes :: [SGR]
+    codes = [ Reset
+            , SetConsoleIntensity $ if bold s then BoldIntensity else NormalIntensity
+            , SetConsoleIntensity $ if faint s then FaintIntensity else NormalIntensity
+            , SetItalicized $ italicized s
+            , SetUnderlining $ underlining s
+            , SetBlinkSpeed $ blinkSpeed s
+            , SetVisible $ visible s
+            , SetSwapForegroundBackground $ inverted s
+            ]
+
     colorCode :: ConsoleLayer -> ANSIColor -> SGR
     colorCode l (Color i c) = SetColor l i c
     colorCode l (PaletteColor c) = SetPaletteColor l c
     colorCode l (RGBColor c) = SetRGBColor l c
 
-    colorCodes = [colorCode l c | l <- [Foreground, Background], c <- colors]
-
-    enumerableCodes = concat
-      [ [Reset]
-      , [SetConsoleIntensity i | i <- [BoldIntensity, FaintIntensity, NormalIntensity]]
-      , [SetItalicized i | i <- [True, False]]
-      , [SetUnderlining u | u <- [SingleUnderline, DoubleUnderline, NoUnderline]]
-      , [SetBlinkSpeed s | s <- [SlowBlink, RapidBlink, NoBlink]]
-      , [SetVisible v | v <- [True, False]]
-      , [SetSwapForegroundBackground s | s <- [True, False]]
-      ]
+    colorCodes :: [SGR]
+    colorCodes = catMaybes [ colorCode Foreground <$> foreground s
+                           , colorCode Background <$> background s
+                           ]
 
 
 bfs :: forall a b. (Ord a, Show b) => a -> (a -> Bool) -> (a -> [(a, b)]) -> Maybe [b]
@@ -124,12 +128,7 @@ codePlan source target = case bfs source (== target) step of
   Nothing -> error $ "No path between " ++ show source ++ " and " ++ show target
   where
     step :: SGRState -> [(SGRState, SGR)]
-    step state = [(applySGR code state, code) | code <- allCodes colors]
-
-    colors :: [ANSIColor]
-    colors = catMaybes [ foreground source, foreground target
-                       , background source, background target
-                       ]
+    step state = [(applySGR code state, code) | code <- codesForState target]
 
 
 compress :: SGRState -> [SGR] -> [SGR]
